@@ -268,8 +268,32 @@ For support, please contact: your-email@yourwebsite.com
 
 ## Changelog
 
+### 1.1.0
+- **Plugin Bundle Updates:**
+  - Replaced IWP Admin Panel Installer with InfiniteWP Client
+  - Updated bundled plugins list to reflect current package
+- **Admin Dashboard Improvements:**
+  - Removed redundant activate buttons from plugin list
+  - Simplified actions to "View in Plugins" button only
+  - Updated instructions to direct users to WordPress Plugins page for activation
+- **Setup Wizard Enhancements:**
+  - Changed post-installation redirect to WordPress Plugins page
+  - Users can now activate and configure plugins at their own pace
+  - Updated wizard completion message and button text
+  - Updated plugin list in wizard to show InfiniteWP Client instead of IWP Admin Panel Installer
+- **User Experience:**
+  - Streamlined workflow - installation and activation are now separate steps
+  - Better alignment with standard WordPress plugin management practices
+
+### 1.0.1
+- Fixed plugin installation wizard redirect behavior
+- Improved admin dashboard functionality
+- Updated bundled plugins detection and path resolution
+
 ### 1.0.0
 - Initial release
 - Plugin bundle management system
-- Admin dashboard
+- Admin dashboard with statistics and plugin management
+- Setup wizard with Basic/Portfolio and Shop/Catalogue modes
 - Automatic installation and activation
+- Support for single-file and directory-based plugins

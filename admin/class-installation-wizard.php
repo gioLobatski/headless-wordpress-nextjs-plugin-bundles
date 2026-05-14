@@ -99,7 +99,7 @@ class WP_Bundle_Installation_Wizard {
                                     <li>✓ Imagify (Image Optimization)</li>
                                     <li>✓ Rank Math SEO</li>
                                     <li>✓ SVG Support</li>
-                                    <li>✓ IWP Admin Panel Installer</li>
+                                    <li>✓ InfiniteWP Client</li>
                                     <li>✓ WP Time Capsule (Backup)</li>
                                     <li>✓ WP GraphQL</li>
                                     <li>✓ WP GraphQL ACF</li>
@@ -167,10 +167,10 @@ class WP_Bundle_Installation_Wizard {
                 <div class="wp-bundle-wizard-complete">
                     <div class="complete-icon">✓</div>
                     <h2><?php echo esc_html__( 'Your plugins have been installed successfully!', 'wp-plugin-bundle' ); ?></h2>
-                    <p><?php echo esc_html__( 'You can manage your plugins from the Plugin Bundle dashboard.', 'wp-plugin-bundle' ); ?></p>
+                    <p><?php echo esc_html__( 'You can now activate and configure your plugins from the WordPress Plugins page.', 'wp-plugin-bundle' ); ?></p>
                     
-                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-plugin-bundle' ) ); ?>" class="button button-primary button-large">
-                        <?php echo esc_html__( 'Go to Plugin Bundle Dashboard', 'wp-plugin-bundle' ); ?>
+                    <a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>" class="button button-primary button-large">
+                        <?php echo esc_html__( 'Go to Plugins Page', 'wp-plugin-bundle' ); ?>
                     </a>
                 </div>
             <?php endif; ?>

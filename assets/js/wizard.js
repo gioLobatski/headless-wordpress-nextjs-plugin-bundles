@@ -56,11 +56,11 @@ jQuery(document).ready(function($) {
                     
                     // Add success log
                     addLog('✓ All plugins installed successfully!', 'success');
-                    addLog('✓ Redirecting to dashboard...', 'info');
+                    addLog('✓ Redirecting to plugins page...', 'info');
                     
                     // Redirect after delay
                     setTimeout(function() {
-                        window.location.href = wpBundleWizardAjax.dashboardUrl;
+                        window.location.href = wpBundleWizardAjax.pluginsUrl;
                     }, 2000);
                 } else {
                     $statusText.text('Installation completed with some errors');

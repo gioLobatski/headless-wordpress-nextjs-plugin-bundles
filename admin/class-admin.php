@@ -74,7 +74,7 @@ class WP_Bundle_Admin {
             wp_localize_script( 'wp-bundle-wizard', 'wpBundleWizardAjax', array(
                 'ajaxUrl' => admin_url( 'admin-ajax.php' ),
                 'nonce' => wp_create_nonce( 'wp_bundle_wizard_nonce' ),
-                'dashboardUrl' => admin_url( 'admin.php?page=wp-plugin-bundle' )
+                'pluginsUrl' => admin_url( 'plugins.php' )
             ) );
             return;
         }
@@ -177,15 +177,9 @@ class WP_Bundle_Admin {
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <?php if ( $plugin['active'] ) : ?>
-                                                <a href="<?php echo esc_url( admin_url( 'plugins.php?s=' . urlencode( $plugin['name'] ) ) ); ?>" class="button button-small">
-                                                    <?php echo esc_html__( 'View', 'wp-plugin-bundle' ); ?>
-                                                </a>
-                                            <?php else : ?>
-                                                <a href="<?php echo esc_url( wp_nonce_url( admin_url( 'plugins.php?action=activate&plugin=' . urlencode( $plugin['slug'] ) . '/' . urlencode( $plugin['slug'] ) . '.php' ), 'activate-plugin_' . $plugin['slug'] . '/' . $plugin['slug'] . '.php' ) ); ?>" class="button button-small button-primary">
-                                                    <?php echo esc_html__( 'Activate', 'wp-plugin-bundle' ); ?>
-                                                </a>
-                                            <?php endif; ?>
+                                            <a href="<?php echo esc_url( admin_url( 'plugins.php?s=' . urlencode( $plugin['name'] ) ) ); ?>" class="button button-small">
+                                                <?php echo esc_html__( 'View in Plugins', 'wp-plugin-bundle' ); ?>
+                                            </a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -201,7 +195,7 @@ class WP_Bundle_Admin {
                         <li><?php echo esc_html__( 'Download or copy your plugin files', 'wp-plugin-bundle' ); ?></li>
                         <li><?php echo esc_html__( 'Place them in the bundled-plugins/ directory', 'wp-plugin-bundle' ); ?></li>
                         <li><?php echo esc_html__( 'Plugins can be single .php files or plugin directories', 'wp-plugin-bundle' ); ?></li>
-                        <li><?php echo esc_html__( 'Activate or reinstall from this page', 'wp-plugin-bundle' ); ?></li>
+                        <li><?php echo esc_html__( 'Activate and manage plugins from the WordPress Plugins page', 'wp-plugin-bundle' ); ?></li>
                     </ol>
                     
                     <div class="wp-bundle-path">

@@ -1,0 +1,164 @@
+/************************************************************
+ * InfiniteWP Admin panel - Installer									*
+ * Copyright (c) 2012 Revmakx								*
+ * www.revmakx.com											*
+ *															*
+ ************************************************************/
+@charset "utf-8";
+/* CSS Document */
+
+.clear-both {
+	clear: both;
+	height: 0px;
+	float: none !important;
+	padding: 0 !important;
+	margin: 0 !important;
+}
+.dialog_cont .check_requirement div {
+	display: inline-block;
+}
+.dialog_cont .th_sub ul li a.completed:hover {
+	background-position: 0 -510px;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content {
+}
+.dialog_cont.iwp_installation .iwp_installtion_content .tr {
+	border-top: 1px solid #E5E5E5;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content .tr:first-child {
+	border-top: 0;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content .tr:nth-child(2n+2) {
+	background-color: #F9F9F9;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.check_requirement .tr {
+	padding: 15px;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.check_requirement .tr .req_txt {
+	width: 720px;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.check_requirement .tr .req_txt .req_title, .dialog_cont.iwp_installation .iwp_installtion_content.db_login .form .form_title {
+	font-size: 13px;
+	text-transform: uppercase;
+	font-weight: 700;
+	margin-bottom: 7px;
+	width: 720px;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.check_requirement .tr .req_txt .req_descr {
+	clear: both;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.check_requirement .tr .req_result {
+	font-size: 12px;
+	text-transform: uppercase;
+	font-weight: 700;
+	text-align: center;
+	width: 80px;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.check_requirement .tr .icon_result {
+	background-position: -5px;
+	width: 20px;
+	height: 20px;
+	margin: 4px 0 0 41px;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.check_requirement .tr .icon_result.success {
+	background-image: url(../images/icon_success.png);
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.check_requirement .tr .icon_result.fail {
+	background-image: url(../images/icon_failure.png);
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.check_requirement .tr .icon_result.warning {
+	background-image: url(../images/icon_warning.png);
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.db_login .form .form_title {
+	margin: 20px auto;
+	text-align: center;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.db_login .form {
+	width: 342px;
+	padding: 0 40px 20px;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.db_login .form .label {
+	font-size: 11px;
+	color: #9398a2;
+	text-transform: uppercase;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.db_login .form input {
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.license_agreement {
+	color: #555;
+	line-height: 16px;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.license_agreement .content strong {
+	font-weight: 700;
+	margin: 10px 0 5px;
+	float: left;
+	width: 100%;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.license_agreement .content strong.title {
+	width: 100%;
+	text-align: center;
+	margin: 20px 0 10px;
+}
+.dialog_cont.iwp_installation .iwp_installtion_content.install_final {
+	padding: 20px;
+}
+.postbox {
+	position: relative;
+	width: 600px;
+	border: 1px solid #E5E5E5;
+	-webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	background: #FFF;
+}
+.postbox-container h3 {
+	font-size: 14px;
+	padding: 8px 12px;
+	margin: 0;
+	line-height: 1.4;
+	cursor: default !important;
+}
+.postbox-container .inside {
+	width: 100%;
+	box-sizing: border-box;
+	padding-bottom: 0;
+}
+#iwp_db_deatils {
+	width: 100%;
+}
+#iwp_db_toogle a {
+	text-decoration: none;
+}
+#iwp_db_toogle a:hover {
+	text-decoration: underline;
+}
+table.is02 tr td {
+	position: relative;
+}
+table.is02 tr td:first-child {
+	padding: 10px 5px 10px 10px;
+}
+table.is02 tr td:last-child {
+	padding: 10px 10px 10px 5px;
+}
+table.is02 td input {
+	width: 100%;
+	box-sizing: border-box;
+	line-height: 19px;
+}
+table.is02 td input:focus {
+	box-shadow: 0 0 2px rgba(30, 140, 190, 0.8);
+}
+input[type=submit].button-primary.disabled {
+	background-color: #BBB !important;
+	border-color: #999 !important;
+	color: #DDD !important;
+}
+table.is02 .valid_cont {
+	position: absolute; color: #A92A2A;
+}
+.updated.iwp_install_notice {border-left-color: #222;}
+.updated.iwp_install_notice .button-primary { background-color: #222; border-color: #222; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4)  ;}
+#wpfooter{
+	position: relative !important;
+}
+.updated.iwp_install_notice { display:none;}

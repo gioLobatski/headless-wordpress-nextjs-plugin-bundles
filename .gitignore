@@ -1,0 +1,23 @@
+# WordPress Plugin Bundle - .gitignore
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Upload the bundled plugins, but ignore large ZIP files
+bundled-plugins/*.zip
+bundled-plugins/*.tar.gz
+
+# If you want to exclude specific plugins from version control, add them here:
+# bundled-plugins/plugin-name/

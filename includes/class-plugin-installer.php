@@ -21,8 +21,8 @@ class WP_Bundle_Plugin_Installer {
      * Constructor
      */
     public function __construct() {
-        // Default: Use GitHub releases from the repository
-        $this->download_url = get_option( 'wp_bundle_download_url', 'https://github.com/gioLobatski/headless-wordpress-plugin-downloads/releases/download' );
+        // Default: Use GitHub releases from the same repository
+        $this->download_url = get_option( 'wp_bundle_download_url', 'https://github.com/gioLobatski/headless-wordpress-nextjs-plugin-bundles/releases/download' );
     }
     
     /**

@@ -26,7 +26,7 @@ This plugin now supports downloading bundled plugins from GitHub Releases, reduc
 
 ### Step 2: Create GitHub Release
 
-1. **Go to your repository**: https://github.com/gioLobatski/headless-wordpress-plugin-downloads
+1. **Go to your repository**: https://github.com/gioLobatski/headless-wordpress-nextjs-plugin-bundles/releases
 
 2. **Click "Releases"** on the right sidebar
 

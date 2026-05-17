@@ -55,7 +55,7 @@ echo  ZIP Creation Complete!
 echo ============================================
 echo.
 echo Next steps:
-echo 1. Go to: https://github.com/gioLobatski/headless-wordpress-plugin-downloads/releases
+echo 1. Go to: https://github.com/gioLobatski/headless-wordpress-nextjs-plugin-bundles/releases
 echo 2. Create a new release with tag: v1.1.0
 echo 3. Upload all ZIP files from: plugin-zips\v1.1.0\
 echo.

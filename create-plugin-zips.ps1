@@ -19,7 +19,7 @@ param(
     [string]$Version = "v1.3.0"
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 $ScriptRoot = $PSScriptRoot
 if (-not $ScriptRoot) { $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path }
 
@@ -27,7 +27,7 @@ $BundledRoot = Join-Path $ScriptRoot "bundled-plugins"
 $OutRoot     = Join-Path $ScriptRoot "plugin-zips"
 $OutDir      = Join-Path $OutRoot $Version
 
-if (-not (Test-Path $BundledRoot)) {
+if (-not (Test-Path -LiteralPath $BundledRoot)) {
     Write-Host "ERROR: bundled-plugins folder not found at $BundledRoot" -ForegroundColor Red
     exit 1
 }
@@ -45,7 +45,7 @@ $PluginMap = @(
     @{ Source = "gravityforms";                         Slug = "gravityforms" },
     @{ Source = "imagify";                              Slug = "imagify" },
     @{ Source = "ithemes-security-pro";                 Slug = "ithemes-security-pro" },
-    @{ Source = "iwp-admin-panel-installer_v2.0.1";     Slug = "iwp-client" },
+    @{ Source = "iwp-client";                          Slug = "iwp-client" },
     @{ Source = "seo-by-rank-math";                     Slug = "seo-by-rank-math" },
     @{ Source = "svg-support";                          Slug = "svg-support" },
     @{ Source = "woocommerce.10.7.0";                   Slug = "woocommerce" },
@@ -89,13 +89,18 @@ function Find-PluginRoot {
 # Build
 # ---------------------------------------------------------------------
 
-if (Test-Path $OutDir) {
+if (Test-Path -LiteralPath $OutDir) {
     Write-Host "Cleaning existing output directory: $OutDir"
-    Remove-Item -Path $OutDir -Recurse -Force
+    Remove-Item -LiteralPath $OutDir -Recurse -Force
 }
 New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
 
-$staging = Join-Path $env:TEMP ("wp-bundle-staging-" + [Guid]::NewGuid().ToString("N"))
+# Use a SHORT staging root to avoid Windows MAX_PATH (260-char) limits.
+# OneDrive paths + deep vendor trees easily blow past that.
+$staging = "C:\wpb-stg"
+if (Test-Path -LiteralPath $staging) {
+    Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
+}
 New-Item -ItemType Directory -Path $staging -Force | Out-Null
 
 $success = 0
@@ -104,7 +109,8 @@ $failed  = @()
 
 Write-Host ""
 Write-Host "Building plugin ZIPs for $Version" -ForegroundColor Cyan
-Write-Host "Output: $OutDir"
+Write-Host "Output:  $OutDir"
+Write-Host "Staging: $staging"
 Write-Host ""
 
 foreach ($entry in $PluginMap) {
@@ -115,7 +121,7 @@ foreach ($entry in $PluginMap) {
 
     Write-Host "[ $slug ]" -ForegroundColor Yellow
 
-    if (-not (Test-Path $sourceDir)) {
+    if (-not (Test-Path -LiteralPath $sourceDir)) {
         Write-Host "  SKIP  source not found: $($entry.Source)" -ForegroundColor DarkYellow
         $skipped++
         continue
@@ -131,17 +137,28 @@ foreach ($entry in $PluginMap) {
 
     Write-Host "  src   $pluginRoot"
 
-    # Stage the plugin under a clean folder name = slug.
-    $stageDir   = Join-Path $staging $slug
-    if (Test-Path $stageDir) { Remove-Item -Path $stageDir -Recurse -Force }
+    # Stage via robocopy to a short path (handles long source paths natively).
+    $stageDir = Join-Path $staging $slug
+    if (Test-Path -LiteralPath $stageDir) {
+        Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
     New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 
-    Copy-Item -Path (Join-Path $pluginRoot "*") -Destination $stageDir -Recurse -Force
+    $robocopyOut = & robocopy "$pluginRoot" "$stageDir" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 2>&1
+    # Robocopy exit codes 0-7 are success; >=8 is failure.
+    if ($LASTEXITCODE -ge 8) {
+        Write-Host "  FAIL  robocopy exit $LASTEXITCODE" -ForegroundColor Red
+        Write-Host ($robocopyOut | Out-String)
+        $failed += $slug
+        Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
+        continue
+    }
 
-    # Compress staged folder so its top-level entry inside the ZIP is "<slug>/".
+    # Compress staged folder. Source path is short (C:\wpb-stg\<slug>) so
+    # Compress-Archive won't hit MAX_PATH.
     try {
-        Compress-Archive -Path $stageDir -DestinationPath $zipPath -Force -CompressionLevel Optimal
-        $size = (Get-Item $zipPath).Length
+        Compress-Archive -Path $stageDir -DestinationPath $zipPath -Force -CompressionLevel Optimal -ErrorAction Stop
+        $size   = (Get-Item -LiteralPath $zipPath).Length
         $sizeMb = [math]::Round($size / 1MB, 2)
         Write-Host "  ok    $zipName ($sizeMb MB)" -ForegroundColor Green
         $success++
@@ -150,12 +167,12 @@ foreach ($entry in $PluginMap) {
         $failed += $slug
     }
 
-    # Clean stage entry to keep memory low.
-    Remove-Item -Path $stageDir -Recurse -Force -ErrorAction SilentlyContinue
+    # Clean stage entry to free disk space between plugins.
+    Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-# Cleanup staging.
-Remove-Item -Path $staging -Recurse -Force -ErrorAction SilentlyContinue
+# Cleanup staging root.
+Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
 
 # ---------------------------------------------------------------------
 # Summary

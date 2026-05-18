@@ -261,8 +261,11 @@ class WP_Bundle_Installation_Wizard {
     
     /**
      * Install selected plugins
-     * 
-     * @param array $plugins
+     *
+     * Downloads each plugin's ZIP from the configured GitHub Release
+     * and installs it via WP_Bundle_Plugin_Installer::install_from_github().
+     *
+     * @param array $plugins Plugin descriptors from WP_Bundle_Plugin_Manager::get_bundled_plugins()
      * @return array
      */
     private function install_selected_plugins( $plugins ) {
@@ -270,38 +273,55 @@ class WP_Bundle_Installation_Wizard {
         $results = array();
         $success_count = 0;
         $overall_success = true;
-        
+
         foreach ( $plugins as $plugin ) {
-            $result = $installer->install_from_local( $plugin['path'] );
-            
+            // Each $plugin entry comes from plugin-download-config.php and
+            // contains 'name' (slug), 'zip_file' and 'version'.
+            $slug      = isset( $plugin['name'] )     ? $plugin['name']     : '';
+            $zip_file  = isset( $plugin['zip_file'] ) ? $plugin['zip_file'] : '';
+            $version   = isset( $plugin['version'] )  ? $plugin['version']  : 'latest';
+
+            if ( empty( $slug ) || empty( $zip_file ) ) {
+                $overall_success = false;
+                $results[] = array(
+                    'name'    => $slug ?: __( '(unknown)', 'wp-plugin-bundle' ),
+                    'success' => false,
+                    'message' => __( 'Plugin configuration is missing slug or zip filename.', 'wp-plugin-bundle' ),
+                );
+                continue;
+            }
+
+            $result = $installer->install_from_github( $slug, $zip_file, $version );
+
             if ( $result['success'] ) {
-                // Activate the plugin
-                if ( ! empty( $result['plugin_slug'] ) ) {
-                    $activation = $installer->activate_plugin( $result['plugin_slug'] );
-                    $result['activation'] = $activation;
-                    
-                    if ( $activation['success'] ) {
-                        $success_count++;
-                    }
+                // Activate the plugin once installed.
+                $activation_slug = ! empty( $result['plugin_slug'] ) ? $result['plugin_slug'] : $slug;
+                $activation = $installer->activate_plugin( $activation_slug );
+                $result['activation'] = $activation;
+
+                if ( $activation['success'] ) {
+                    $success_count++;
+                } else {
+                    $overall_success = false;
                 }
             } else {
                 $overall_success = false;
             }
-            
+
             $results[] = array(
-                'name' => $plugin['name'],
+                'name'    => $slug,
                 'success' => $result['success'],
-                'message' => $result['message']
+                'message' => $result['message'],
             );
         }
-        
+
         // Store installation results
         update_option( 'wp_bundle_installed_plugins', $results );
         update_option( 'wp_bundle_last_installed', time() );
-        
+
         return array(
             'success' => $overall_success,
-            'count' => $success_count,
+            'count'   => $success_count,
             'details' => $results
         );
     }

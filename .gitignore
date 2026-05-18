@@ -31,5 +31,4 @@ plugin-zips/
 # - includes/
 # - wp-plugin-bundle.php
 # - README.md
-# - GITHUB-RELEASES-GUIDE.md
-# - create-plugin-zips.bat (build script)
+# - create-plugin-zips.ps1 (build script)

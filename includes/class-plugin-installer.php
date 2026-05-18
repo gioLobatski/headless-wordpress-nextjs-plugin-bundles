@@ -146,10 +146,15 @@ class WP_Bundle_Plugin_Installer {
         
         $destination = WP_PLUGIN_DIR . '/' . $plugin_slug;
         
+        error_log( '[WP Bundle] Installing plugin: ' . $plugin_slug );
+        error_log( '[WP Bundle] ZIP file: ' . $zip_file );
+        error_log( '[WP Bundle] Destination: ' . $destination );
+        
         // Check if already installed
         if ( is_dir( $destination ) ) {
             // Clean up temp file
             unlink( $zip_file );
+            error_log( '[WP Bundle] Plugin already installed: ' . $plugin_slug );
             
             return array(
                 'success' => true,
@@ -163,12 +168,15 @@ class WP_Bundle_Plugin_Installer {
         $temp_dir = WP_PLUGIN_DIR . '/temp-' . $plugin_slug . '-' . time();
         
         if ( ! wp_mkdir_p( $temp_dir ) ) {
+            error_log( '[WP Bundle] Failed to create temp directory: ' . $temp_dir );
             unlink( $zip_file );
             return array(
                 'success' => false,
                 'message' => __( 'Failed to create temporary directory.', 'wp-plugin-bundle' )
             );
         }
+        
+        error_log( '[WP Bundle] Extracting ZIP to: ' . $temp_dir );
         
         // Use WordPress unzip function
         require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
@@ -180,6 +188,7 @@ class WP_Bundle_Plugin_Installer {
         unlink( $zip_file );
         
         if ( is_wp_error( $unzip_result ) ) {
+            error_log( '[WP Bundle] Unzip failed: ' . $unzip_result->get_error_message() );
             // Clean up temp directory
             $this->delete_directory( $temp_dir );
             
@@ -189,16 +198,27 @@ class WP_Bundle_Plugin_Installer {
             );
         }
         
+        error_log( '[WP Bundle] ZIP extracted successfully' );
+        
+        // List extracted files for debugging
+        if ( is_dir( $temp_dir ) ) {
+            $extracted_files = scandir( $temp_dir );
+            error_log( '[WP Bundle] Extracted files: ' . implode( ', ', $extracted_files ) );
+        }
+        
         // Find the actual plugin directory (handle nested structure)
         $plugin_dir = $this->find_plugin_directory( $temp_dir, $plugin_slug );
         
         if ( ! $plugin_dir ) {
+            error_log( '[WP Bundle] Could not find valid plugin directory in extracted files' );
             $this->delete_directory( $temp_dir );
             return array(
                 'success' => false,
                 'message' => __( 'Could not find valid plugin structure in ZIP file.', 'wp-plugin-bundle' )
             );
         }
+        
+        error_log( '[WP Bundle] Found plugin directory: ' . $plugin_dir );
         
         // Move to final destination
         $move_result = $this->move_directory( $plugin_dir, $destination );
@@ -209,6 +229,7 @@ class WP_Bundle_Plugin_Installer {
         }
         
         if ( ! $move_result ) {
+            error_log( '[WP Bundle] Failed to move plugin directory' );
             return array(
                 'success' => false,
                 'message' => sprintf( __( 'Failed to install plugin "%s".', 'wp-plugin-bundle' ), $plugin_slug )
@@ -217,6 +238,8 @@ class WP_Bundle_Plugin_Installer {
         
         // Get plugin data
         $plugin_data = $this->get_plugin_data_from_dir( $destination );
+        
+        error_log( '[WP Bundle] Plugin installed successfully: ' . $plugin_slug );
         
         return array(
             'success' => true,

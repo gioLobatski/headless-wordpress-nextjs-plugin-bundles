@@ -3,7 +3,7 @@
  * Plugin Name: Headless WordPress NEXT.js Plugin Bundles
  * Plugin URI: https://high6.com/
  * Description: A bundled collection of essential WordPress plugins for headless WordPress with NEXT.js, with automatic installation and activation.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: High6-Gio
  * Author URI: https://high6.com/
  * License: GPL v2 or later
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants
-define( 'WP_BUNDLE_VERSION', '1.1.0' );
+define( 'WP_BUNDLE_VERSION', '1.2.0' );
 define( 'WP_BUNDLE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_BUNDLE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WP_BUNDLE_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );

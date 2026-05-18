@@ -40,18 +40,18 @@ return array(
         'zip_file' => 'wpgraphql-smart-cache.zip',
         'version' => 'v1.0.0',
     ),
-    'wp-graphql-woocommerce' => array(
-        'zip_file' => 'wp-graphql-woocommerce.zip',
-        'version' => 'v1.0.0',
-    ),
+    // 'wp-graphql-woocommerce' => array(  // NOT IN RELEASE YET
+    //     'zip_file' => 'wp-graphql-woocommerce.zip',
+    //     'version' => 'v1.0.0',
+    // ),
     'wp-graphql-tax-query' => array(
-        'zip_file' => 'wp-graphql-tax-query.zip',
+        'zip_file' => 'wp-graphql-tax-query-develop.zip',
         'version' => 'v1.0.0',
     ),
-    'wp-graphql-rank-math' => array(
-        'zip_file' => 'wp-graphql-rank-math.zip',
-        'version' => 'v1.0.0',
-    ),
+    // 'wp-graphql-rank-math' => array(  // NOT IN RELEASE YET
+    //     'zip_file' => 'wp-graphql-rank-math.zip',
+    //     'version' => 'v1.0.0',
+    // ),
     
     // SEO
     'seo-by-rank-math' => array(

@@ -230,6 +230,7 @@ class WP_Bundle_Plugin_Installer {
     /**
      * Find a plugin folder in the bundled-plugins directory
      * Handles nested structure: bundled-plugins/plugin-vendor/plugin-folder/
+     * Also handles version-numbered folders like: bundled-plugins/plugin-name (1)/plugin-name/
      * 
      * @param string $bundled_dir Path to bundled-plugins directory
      * @param string $plugin_slug Plugin slug to find
@@ -239,7 +240,11 @@ class WP_Bundle_Plugin_Installer {
         error_log( '[WP Bundle] Searching for plugin: ' . $plugin_slug . ' in bundled-plugins' );
         
         // Check immediate subdirectories
-        $items = scandir( $bundled_dir );
+        $items = @scandir( $bundled_dir );
+        if ( ! $items ) {
+            error_log( '[WP Bundle] Cannot scan bundled-plugins directory' );
+            return false;
+        }
         
         foreach ( $items as $item ) {
             if ( $item === '.' || $item === '..' ) {
@@ -252,53 +257,56 @@ class WP_Bundle_Plugin_Installer {
                 continue;
             }
             
-            // Check if this is the plugin folder (by slug match)
-            if ( sanitize_title( $item ) === $plugin_slug || strpos( strtolower( $item ), strtolower( $plugin_slug ) ) !== false ) {
-                // Could be the plugin folder itself or a vendor folder containing the plugin
+            error_log( '[WP Bundle] Checking folder: ' . $item );
+            
+            // Check if this folder name contains the plugin slug (handles version numbers)
+            $item_clean = strtolower( preg_replace( '/\s*[\(\d]+\s*/', '', $item ) );
+            $slug_clean = strtolower( $plugin_slug );
+            
+            if ( strpos( $item_clean, $slug_clean ) !== false || strpos( $slug_clean, $item_clean ) !== false ) {
+                error_log( '[WP Bundle] Folder name matches: ' . $item );
+                
+                // Could be the plugin folder itself
                 if ( $this->is_valid_plugin_dir( $path ) ) {
                     error_log( '[WP Bundle] Found plugin directly: ' . $path );
                     return $path;
                 }
                 
-                // Check subdirectories (nested structure)
-                $subitems = scandir( $path );
-                foreach ( $subitems as $subitem ) {
-                    if ( $subitem === '.' || $subitem === '..' ) {
-                        continue;
-                    }
-                    
-                    $subpath = $path . '/' . $subitem;
-                    if ( is_dir( $subpath ) && $this->is_valid_plugin_dir( $subpath ) ) {
-                        if ( sanitize_title( $subitem ) === $plugin_slug || strpos( strtolower( $subitem ), strtolower( $plugin_slug ) ) !== false ) {
+                // Check subdirectories (might be nested inside version-numbered folder)
+                $subitems = @scandir( $path );
+                if ( $subitems ) {
+                    foreach ( $subitems as $subitem ) {
+                        if ( $subitem === '.' || $subitem === '..' ) {
+                            continue;
+                        }
+                        
+                        $subpath = $path . '/' . $subitem;
+                        if ( is_dir( $subpath ) && $this->is_valid_plugin_dir( $subpath ) ) {
                             error_log( '[WP Bundle] Found plugin in subdirectory: ' . $subpath );
                             return $subpath;
                         }
                     }
                 }
             }
-            
-            // Check if this is a vendor folder, look inside
-            if ( strpos( strtolower( $item ), strtolower( $plugin_slug ) ) !== false ) {
-                $subitems = scandir( $path );
-                foreach ( $subitems as $subitem ) {
-                    if ( $subitem === '.' || $subitem === '..' ) {
-                        continue;
-                    }
-                    
-                    $subpath = $path . '/' . $subitem;
-                    if ( is_dir( $subpath ) && $this->is_valid_plugin_dir( $subpath ) ) {
-                        error_log( '[WP Bundle] Found plugin in vendor folder: ' . $subpath );
-                        return $subpath;
-                    }
-                }
-            }
         }
         
-        // Try to find by looking in all subdirectories
+        // Deep search: look in all subdirectories recursively
+        error_log( '[WP Bundle] Starting deep recursive search' );
         $queue = array( $bundled_dir );
+        $visited = array();
+        
         while ( ! empty( $queue ) ) {
             $current = array_shift( $queue );
-            $current_items = scandir( $current );
+            
+            if ( in_array( $current, $visited ) ) {
+                continue;
+            }
+            $visited[] = $current;
+            
+            $current_items = @scandir( $current );
+            if ( ! $current_items ) {
+                continue;
+            }
             
             foreach ( $current_items as $item ) {
                 if ( $item === '.' || $item === '..' ) {
@@ -308,12 +316,19 @@ class WP_Bundle_Plugin_Installer {
                 $path = $current . '/' . $item;
                 
                 if ( is_dir( $path ) ) {
-                    if ( $this->is_valid_plugin_dir( $path ) && 
-                         ( sanitize_title( $item ) === $plugin_slug || strpos( strtolower( $item ), strtolower( $plugin_slug ) ) !== false ) ) {
-                        error_log( '[WP Bundle] Found plugin via deep search: ' . $path );
-                        return $path;
+                    error_log( '[WP Bundle] Deep search checking: ' . $path );
+                    
+                    // Check if this is a valid plugin directory
+                    if ( $this->is_valid_plugin_dir( $path ) ) {
+                        // Check if folder name matches plugin slug
+                        $item_clean = strtolower( preg_replace( '/\s*[\(\d]+\s*/', '', $item ) );
+                        if ( strpos( $item_clean, $slug_clean ) !== false || strpos( $slug_clean, $item_clean ) !== false ) {
+                            error_log( '[WP Bundle] Found plugin via deep search: ' . $path );
+                            return $path;
+                        }
                     }
                     
+                    // Add to queue for further searching
                     $queue[] = $path;
                 }
             }

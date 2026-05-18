@@ -86,6 +86,85 @@ function Find-PluginRoot {
 }
 
 # ---------------------------------------------------------------------
+# New-WpPluginZip
+# ---------------------------------------------------------------------
+# Creates a spec-compliant ZIP with forward-slash entry names.
+#
+# WHY: PowerShell 5.1's built-in Compress-Archive on Windows writes ZIP
+# entries with BACKSLASH separators (e.g. "wp-graphql\wp-graphql.php").
+# This is non-compliant with the ZIP spec. PHP's ZipArchive on Linux
+# (which most WordPress hosts run) treats "\" as a literal character
+# in filenames, NOT a path separator. The result is that files are
+# extracted with literal backslashes in their names instead of into
+# subdirectories, and WordPress reports "Plugin file not found".
+#
+# This function uses System.IO.Compression directly and explicitly
+# normalizes every entry name to use "/" so the resulting ZIPs work
+# correctly on every platform.
+# ---------------------------------------------------------------------
+function New-WpPluginZip {
+    param(
+        [Parameter(Mandatory)] [string]$SourceDir,
+        [Parameter(Mandatory)] [string]$ZipPath,
+        [Parameter(Mandatory)] [string]$TopFolderName
+    )
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+    Add-Type -AssemblyName System.IO.Compression           -ErrorAction SilentlyContinue
+
+    if (Test-Path -LiteralPath $ZipPath) {
+        Remove-Item -LiteralPath $ZipPath -Force
+    }
+
+    $sourceFull = (Resolve-Path -LiteralPath $SourceDir).Path.TrimEnd('\','/')
+    $zipFull    = $ZipPath
+    $level      = [System.IO.Compression.CompressionLevel]::Optimal
+
+    $zipStream = [System.IO.File]::Open(
+        $zipFull,
+        [System.IO.FileMode]::Create,
+        [System.IO.FileAccess]::ReadWrite
+    )
+    $archive = New-Object System.IO.Compression.ZipArchive(
+        $zipStream,
+        [System.IO.Compression.ZipArchiveMode]::Create
+    )
+
+    try {
+        # Enumerate files using .NET to bypass MAX_PATH (it understands
+        # long paths when given absolute roots).
+        $files = [System.IO.Directory]::EnumerateFiles(
+            $sourceFull, '*', [System.IO.SearchOption]::AllDirectories
+        )
+
+        foreach ($file in $files) {
+            # Build the relative path from the source root.
+            $rel = $file.Substring($sourceFull.Length).TrimStart('\','/')
+            # Normalize separators to forward slashes (ZIP spec).
+            $rel = $rel -replace '\\','/'
+            # Prepend the desired top-level folder name.
+            $entryName = "$TopFolderName/$rel"
+
+            $entry = $archive.CreateEntry($entryName, $level)
+            $entryStream = $entry.Open()
+            try {
+                $fs = [System.IO.File]::OpenRead($file)
+                try {
+                    $fs.CopyTo($entryStream)
+                } finally {
+                    $fs.Dispose()
+                }
+            } finally {
+                $entryStream.Dispose()
+            }
+        }
+    } finally {
+        $archive.Dispose()
+        $zipStream.Dispose()
+    }
+}
+
+# ---------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------
 
@@ -154,16 +233,16 @@ foreach ($entry in $PluginMap) {
         continue
     }
 
-    # Compress staged folder. Source path is short (C:\wpb-stg\<slug>) so
-    # Compress-Archive won't hit MAX_PATH.
+    # Build a spec-compliant ZIP whose entries use "/" separators and a
+    # single top-level folder named after the plugin slug.
     try {
-        Compress-Archive -Path $stageDir -DestinationPath $zipPath -Force -CompressionLevel Optimal -ErrorAction Stop
+        New-WpPluginZip -SourceDir $stageDir -ZipPath $zipPath -TopFolderName $slug
         $size   = (Get-Item -LiteralPath $zipPath).Length
         $sizeMb = [math]::Round($size / 1MB, 2)
         Write-Host "  ok    $zipName ($sizeMb MB)" -ForegroundColor Green
         $success++
     } catch {
-        Write-Host "  FAIL  Compress-Archive: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  FAIL  New-WpPluginZip: $($_.Exception.Message)" -ForegroundColor Red
         $failed += $slug
     }
 

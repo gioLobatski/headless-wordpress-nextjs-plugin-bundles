@@ -27,28 +27,300 @@ class WP_Bundle_Plugin_Installer {
     
     /**
      * Install a plugin from GitHub Releases
+     * Downloads the entire repository ZIP and extracts the specific plugin
      * 
      * @param string $plugin_slug Plugin slug/directory name
-     * @param string $zip_filename ZIP file name in the release
+     * @param string $zip_filename ZIP file name in the release (unused - we download repo ZIP)
      * @param string $version Release version (default: latest)
      * @return array Installation result
      */
     public function install_from_github( $plugin_slug, $zip_filename, $version = 'latest' ) {
-        // Build download URL
-        $download_url = rtrim( $this->download_url, '/' ) . '/' . $version . '/' . $zip_filename;
+        error_log( '[WP Bundle] ===== Starting GitHub install for: ' . $plugin_slug . ' =====' );
         
-        // Download the ZIP file
+        // Download the entire repository ZIP (GitHub auto-generates this)
+        $download_url = 'https://github.com/gioLobatski/headless-wordpress-nextjs-plugin-bundles/archive/refs/tags/' . $version . '.zip';
+        
+        error_log( '[WP Bundle] Download URL: ' . $download_url );
+        
+        // Download the repository ZIP file
         $temp_file = $this->download_plugin_zip( $download_url );
         
         if ( is_wp_error( $temp_file ) ) {
+            error_log( '[WP Bundle] Download failed for ' . $plugin_slug . ': ' . $temp_file->get_error_message() );
             return array(
                 'success' => false,
-                'message' => $temp_file->get_error_message()
+                'message' => $temp_file->get_error_message(),
+                'name' => $plugin_slug
             );
         }
         
-        // Extract and install
-        return $this->install_from_zip( $temp_file, $plugin_slug );
+        error_log( '[WP Bundle] Repository ZIP downloaded successfully, extracting plugin: ' . $plugin_slug );
+        
+        // Extract the specific plugin from the repository ZIP
+        $result = $this->install_from_repo_zip( $temp_file, $plugin_slug );
+        
+        // Add plugin name to result for display
+        $result['name'] = $plugin_slug;
+        
+        if ( ! $result['success'] ) {
+            error_log( '[WP Bundle] Installation failed for ' . $plugin_slug . ': ' . $result['message'] );
+        } else {
+            error_log( '[WP Bundle] Installation successful for ' . $plugin_slug );
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Extract and install a specific plugin from the repository ZIP
+     * 
+     * @param string $repo_zip Path to repository ZIP file
+     * @param string $plugin_slug Plugin slug to extract
+     * @return array Installation result
+     */
+    private function install_from_repo_zip( $repo_zip, $plugin_slug ) {
+        // Include WordPress filesystem functions
+        if ( ! function_exists( 'WP_Filesystem' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        
+        WP_Filesystem();
+        global $wp_filesystem;
+        
+        $destination = WP_PLUGIN_DIR . '/' . $plugin_slug;
+        
+        error_log( '[WP Bundle] Extracting plugin from repo ZIP: ' . $plugin_slug );
+        error_log( '[WP Bundle] Destination: ' . $destination );
+        
+        // Check if already installed
+        if ( is_dir( $destination ) ) {
+            // Clean up temp file
+            unlink( $repo_zip );
+            error_log( '[WP Bundle] Plugin already installed: ' . $plugin_slug );
+            
+            return array(
+                'success' => true,
+                'message' => sprintf( __( 'Plugin "%s" is already installed.', 'wp-plugin-bundle' ), $plugin_slug ),
+                'plugin_slug' => $plugin_slug,
+                'already_installed' => true
+            );
+        }
+        
+        // Extract repository ZIP to temp directory
+        $temp_dir = WP_PLUGIN_DIR . '/temp-repo-' . time();
+        
+        if ( ! wp_mkdir_p( $temp_dir ) ) {
+            error_log( '[WP Bundle] Failed to create temp directory: ' . $temp_dir );
+            unlink( $repo_zip );
+            return array(
+                'success' => false,
+                'message' => __( 'Failed to create temporary directory.', 'wp-plugin-bundle' )
+            );
+        }
+        
+        error_log( '[WP Bundle] Extracting repository ZIP to: ' . $temp_dir );
+        
+        // Use WordPress unzip function
+        require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
+        require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
+        
+        $unzip_result = unzip_file( $repo_zip, $temp_dir );
+        
+        // Clean up repo ZIP
+        unlink( $repo_zip );
+        
+        if ( is_wp_error( $unzip_result ) ) {
+            error_log( '[WP Bundle] Unzip failed: ' . $unzip_result->get_error_message() );
+            $this->delete_directory( $temp_dir );
+            
+            return array(
+                'success' => false,
+                'message' => $unzip_result->get_error_message()
+            );
+        }
+        
+        error_log( '[WP Bundle] Repository ZIP extracted successfully' );
+        
+        // List extracted structure
+        if ( is_dir( $temp_dir ) ) {
+            $extracted_items = scandir( $temp_dir );
+            error_log( '[WP Bundle] Repository structure: ' . implode( ', ', $extracted_items ) );
+        }
+        
+        // Find the plugin in bundled-plugins directory
+        // Structure: repo-zip/repo-name/bundled-plugins/plugin-slug/
+        $repo_folder = $temp_dir;
+        $first_level = scandir( $repo_folder );
+        $repo_main_folder = null;
+        
+        // Find the main repository folder (usually has the repo name)
+        foreach ( $first_level as $item ) {
+            if ( $item !== '.' && $item !== '..' && is_dir( $repo_folder . '/' . $item ) ) {
+                $repo_main_folder = $repo_folder . '/' . $item;
+                break;
+            }
+        }
+        
+        if ( ! $repo_main_folder ) {
+            error_log( '[WP Bundle] Could not find repository main folder' );
+            $this->delete_directory( $temp_dir );
+            return array(
+                'success' => false,
+                'message' => __( 'Invalid repository structure.', 'wp-plugin-bundle' )
+            );
+        }
+        
+        error_log( '[WP Bundle] Repository main folder: ' . $repo_main_folder );
+        
+        // Look for the plugin in bundled-plugins directory
+        $bundled_plugins_dir = $repo_main_folder . '/bundled-plugins';
+        
+        if ( ! is_dir( $bundled_plugins_dir ) ) {
+            error_log( '[WP Bundle] bundled-plugins directory not found in repository' );
+            $this->delete_directory( $temp_dir );
+            return array(
+                'success' => false,
+                'message' => __( 'bundled-plugins directory not found in repository.', 'wp-plugin-bundle' )
+            );
+        }
+        
+        error_log( '[WP Bundle] bundled-plugins directory found' );
+        
+        // Find the specific plugin folder
+        $plugin_source = $this->find_plugin_in_bundled( $bundled_plugins_dir, $plugin_slug );
+        
+        if ( ! $plugin_source ) {
+            error_log( '[WP Bundle] Plugin not found in bundled-plugins: ' . $plugin_slug );
+            $this->delete_directory( $temp_dir );
+            return array(
+                'success' => false,
+                'message' => sprintf( __( 'Plugin "%s" not found in bundled-plugins.', 'wp-plugin-bundle' ), $plugin_slug )
+            );
+        }
+        
+        error_log( '[WP Bundle] Found plugin source: ' . $plugin_source );
+        
+        // Move plugin to final destination
+        $move_result = $this->move_directory( $plugin_source, $destination );
+        
+        // Clean up temp directory
+        $this->delete_directory( $temp_dir );
+        
+        if ( ! $move_result ) {
+            error_log( '[WP Bundle] Failed to move plugin directory' );
+            return array(
+                'success' => false,
+                'message' => sprintf( __( 'Failed to install plugin "%s".', 'wp-plugin-bundle' ), $plugin_slug )
+            );
+        }
+        
+        // Get plugin data
+        $plugin_data = $this->get_plugin_data_from_dir( $destination );
+        
+        error_log( '[WP Bundle] Plugin installed successfully: ' . $plugin_slug );
+        
+        return array(
+            'success' => true,
+            'message' => sprintf( __( 'Plugin "%s" installed successfully.', 'wp-plugin-bundle' ), $plugin_data['Name'] ?: $plugin_slug ),
+            'plugin_slug' => $plugin_slug,
+            'plugin_data' => $plugin_data
+        );
+    }
+    
+    /**
+     * Find a plugin folder in the bundled-plugins directory
+     * Handles nested structure: bundled-plugins/plugin-vendor/plugin-folder/
+     * 
+     * @param string $bundled_dir Path to bundled-plugins directory
+     * @param string $plugin_slug Plugin slug to find
+     * @return string|false Plugin directory path or false
+     */
+    private function find_plugin_in_bundled( $bundled_dir, $plugin_slug ) {
+        error_log( '[WP Bundle] Searching for plugin: ' . $plugin_slug . ' in bundled-plugins' );
+        
+        // Check immediate subdirectories
+        $items = scandir( $bundled_dir );
+        
+        foreach ( $items as $item ) {
+            if ( $item === '.' || $item === '..' ) {
+                continue;
+            }
+            
+            $path = $bundled_dir . '/' . $item;
+            
+            if ( ! is_dir( $path ) ) {
+                continue;
+            }
+            
+            // Check if this is the plugin folder (by slug match)
+            if ( sanitize_title( $item ) === $plugin_slug || strpos( strtolower( $item ), strtolower( $plugin_slug ) ) !== false ) {
+                // Could be the plugin folder itself or a vendor folder containing the plugin
+                if ( $this->is_valid_plugin_dir( $path ) ) {
+                    error_log( '[WP Bundle] Found plugin directly: ' . $path );
+                    return $path;
+                }
+                
+                // Check subdirectories (nested structure)
+                $subitems = scandir( $path );
+                foreach ( $subitems as $subitem ) {
+                    if ( $subitem === '.' || $subitem === '..' ) {
+                        continue;
+                    }
+                    
+                    $subpath = $path . '/' . $subitem;
+                    if ( is_dir( $subpath ) && $this->is_valid_plugin_dir( $subpath ) ) {
+                        if ( sanitize_title( $subitem ) === $plugin_slug || strpos( strtolower( $subitem ), strtolower( $plugin_slug ) ) !== false ) {
+                            error_log( '[WP Bundle] Found plugin in subdirectory: ' . $subpath );
+                            return $subpath;
+                        }
+                    }
+                }
+            }
+            
+            // Check if this is a vendor folder, look inside
+            if ( strpos( strtolower( $item ), strtolower( $plugin_slug ) ) !== false ) {
+                $subitems = scandir( $path );
+                foreach ( $subitems as $subitem ) {
+                    if ( $subitem === '.' || $subitem === '..' ) {
+                        continue;
+                    }
+                    
+                    $subpath = $path . '/' . $subitem;
+                    if ( is_dir( $subpath ) && $this->is_valid_plugin_dir( $subpath ) ) {
+                        error_log( '[WP Bundle] Found plugin in vendor folder: ' . $subpath );
+                        return $subpath;
+                    }
+                }
+            }
+        }
+        
+        // Try to find by looking in all subdirectories
+        $queue = array( $bundled_dir );
+        while ( ! empty( $queue ) ) {
+            $current = array_shift( $queue );
+            $current_items = scandir( $current );
+            
+            foreach ( $current_items as $item ) {
+                if ( $item === '.' || $item === '..' ) {
+                    continue;
+                }
+                
+                $path = $current . '/' . $item;
+                
+                if ( is_dir( $path ) ) {
+                    if ( $this->is_valid_plugin_dir( $path ) && 
+                         ( sanitize_title( $item ) === $plugin_slug || strpos( strtolower( $item ), strtolower( $plugin_slug ) ) !== false ) ) {
+                        error_log( '[WP Bundle] Found plugin via deep search: ' . $path );
+                        return $path;
+                    }
+                    
+                    $queue[] = $path;
+                }
+            }
+        }
+        
+        error_log( '[WP Bundle] Plugin not found after exhaustive search' );
+        return false;
     }
     
     /**

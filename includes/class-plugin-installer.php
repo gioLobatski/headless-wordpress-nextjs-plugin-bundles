@@ -58,6 +58,9 @@ class WP_Bundle_Plugin_Installer {
      * @return string|WP_Error Path to temp file or error
      */
     private function download_plugin_zip( $url ) {
+        // Log download attempt
+        error_log( '[WP Bundle] Attempting to download from: ' . $url );
+        
         // Include required WordPress functions
         if ( ! function_exists( 'WP_Filesystem' ) ) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -67,37 +70,53 @@ class WP_Bundle_Plugin_Installer {
         $temp_file = wp_tempnam( $url );
         
         if ( ! $temp_file ) {
+            error_log( '[WP Bundle] Failed to create temporary file' );
             return new WP_Error(
                 'temp_file_failed',
                 __( 'Failed to create temporary file.', 'wp-plugin-bundle' )
             );
         }
         
-        // Download the file
+        error_log( '[WP Bundle] Temp file created: ' . $temp_file );
+        
+        // Download the file with detailed error reporting
         $response = wp_safe_remote_get( $url, array(
             'timeout' => 300,
             'stream' => true,
-            'filename' => $temp_file
+            'filename' => $temp_file,
+            'redirection' => 5,
+            'sslverify' => true
         ) );
         
         if ( is_wp_error( $response ) ) {
+            error_log( '[WP Bundle] Download error: ' . $response->get_error_message() );
             unlink( $temp_file );
             return $response;
         }
         
         // Check response code
         $response_code = wp_remote_retrieve_response_code( $response );
+        error_log( '[WP Bundle] HTTP Response Code: ' . $response_code );
+        
         if ( $response_code !== 200 ) {
+            $response_message = wp_remote_retrieve_response_message( $response );
+            error_log( '[WP Bundle] Download failed with status: ' . $response_code . ' - ' . $response_message );
             unlink( $temp_file );
             return new WP_Error(
                 'download_failed',
-                sprintf( __( 'Failed to download plugin. HTTP status: %d', 'wp-plugin-bundle' ), $response_code )
+                sprintf( __( 'Failed to download plugin. HTTP status: %d - %s', 'wp-plugin-bundle' ), $response_code, $response_message )
             );
         }
         
         // Verify file size
         $file_size = filesize( $temp_file );
+        error_log( '[WP Bundle] Downloaded file size: ' . $file_size . ' bytes (' . round( $file_size / 1024 / 1024, 2 ) . ' MB)' );
+        
         if ( $file_size < 100 ) {
+            error_log( '[WP Bundle] Downloaded file is too small (< 100 bytes), likely an error page' );
+            // Read first 500 bytes to see what was downloaded
+            $file_content = file_get_contents( $temp_file, false, null, 0, 500 );
+            error_log( '[WP Bundle] File content preview: ' . substr( $file_content, 0, 200 ) );
             unlink( $temp_file );
             return new WP_Error(
                 'invalid_file',
@@ -105,6 +124,7 @@ class WP_Bundle_Plugin_Installer {
             );
         }
         
+        error_log( '[WP Bundle] Download successful!' );
         return $temp_file;
     }
     

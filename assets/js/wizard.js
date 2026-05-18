@@ -65,6 +65,19 @@ jQuery(document).ready(function($) {
                 } else {
                     $statusText.text('Installation completed with some errors');
                     addLog('✗ ' + response.data.message, 'error');
+                    
+                    // Show detailed results if available
+                    if (response.data.results && Array.isArray(response.data.results)) {
+                        addLog('', 'info');
+                        addLog('--- Detailed Results ---', 'info');
+                        response.data.results.forEach(function(result) {
+                            if (result.success) {
+                                addLog('✓ ' + result.name + ': Installed successfully', 'success');
+                            } else {
+                                addLog('✗ ' + result.name + ': ' + (result.message || 'Failed'), 'error');
+                            }
+                        });
+                    }
                 }
             },
             error: function() {

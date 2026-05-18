@@ -15,9 +15,21 @@ desktop.ini
 # Logs
 *.log
 
-# Upload the bundled plugins, but ignore large ZIP files
-bundled-plugins/*.zip
-bundled-plugins/*.tar.gz
+# Bundled plugins directory - plugins are now downloaded from GitHub Releases
+bundled-plugins/
 
-# If you want to exclude specific plugins from version control, add them here:
-# bundled-plugins/plugin-name/
+# Generated ZIP files (created by build script)
+plugin-zips/
+
+# Build script output
+*.zip
+*.tar.gz
+
+# Keep these folders (tracked in git):
+# - admin/
+# - assets/
+# - includes/
+# - wp-plugin-bundle.php
+# - README.md
+# - GITHUB-RELEASES-GUIDE.md
+# - create-plugin-zips.bat (build script)

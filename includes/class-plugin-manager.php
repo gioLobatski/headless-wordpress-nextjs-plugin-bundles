@@ -89,29 +89,58 @@ class WP_Bundle_Plugin_Manager {
     
     /**
      * Verify status of bundled plugins
-     * 
+     *
+     * Looks up each configured plugin by its slug (directory name) inside
+     * WP_PLUGIN_DIR using WordPress's get_plugins(), then reports its
+     * installed/active state. This works regardless of how the plugin was
+     * installed (wizard, dashboard, manual upload).
+     *
      * @return array
      */
     public function verify_plugins_status() {
         $bundled_plugins = $this->get_bundled_plugins();
         $status = array();
-        
+
+        if ( ! function_exists( 'get_plugins' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        $all_plugins = get_plugins();
+
         foreach ( $bundled_plugins as $plugin ) {
-            $plugin_data = $this->get_plugin_info( $plugin['path'] );
-            
-            if ( $plugin_data ) {
-                $is_active = is_plugin_active( $plugin_data['plugin_file'] );
-                
+            $slug = isset( $plugin['name'] ) ? $plugin['name'] : '';
+            if ( empty( $slug ) ) {
+                continue;
+            }
+
+            $found_file = '';
+            $found_data = null;
+            foreach ( $all_plugins as $plugin_file => $data ) {
+                if ( dirname( $plugin_file ) === $slug ) {
+                    $found_file = $plugin_file;
+                    $found_data = $data;
+                    break;
+                }
+            }
+
+            if ( $found_file ) {
                 $status[] = array(
-                    'name' => $plugin_data['name'],
-                    'slug' => $plugin_data['slug'],
+                    'name'      => $found_data['Name'],
+                    'slug'      => $slug,
                     'installed' => true,
-                    'active' => $is_active,
-                    'version' => $plugin_data['version']
+                    'active'    => is_plugin_active( $found_file ),
+                    'version'   => $found_data['Version'],
+                );
+            } else {
+                $status[] = array(
+                    'name'      => $slug,
+                    'slug'      => $slug,
+                    'installed' => false,
+                    'active'    => false,
+                    'version'   => '',
                 );
             }
         }
-        
+
         return $status;
     }
     

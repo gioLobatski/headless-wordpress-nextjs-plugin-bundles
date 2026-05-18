@@ -262,8 +262,12 @@ class WP_Bundle_Installation_Wizard {
     /**
      * Install selected plugins
      *
-     * Downloads each plugin's ZIP from the configured GitHub Release
-     * and installs it via WP_Bundle_Plugin_Installer::install_from_github().
+     * Two-phase strategy:
+     *   1. Install every selected plugin from its GitHub Release ZIP.
+     *   2. Activate the installed plugins in multiple passes so that
+     *      dependents (e.g. WPGraphQL for ACF) are activated AFTER their
+     *      parents (WPGraphQL, ACF). Passes continue until no further
+     *      activations succeed.
      *
      * @param array $plugins Plugin descriptors from WP_Bundle_Plugin_Manager::get_bundled_plugins()
      * @return array
@@ -271,47 +275,100 @@ class WP_Bundle_Installation_Wizard {
     private function install_selected_plugins( $plugins ) {
         $installer = new WP_Bundle_Plugin_Installer();
         $results = array();
-        $success_count = 0;
         $overall_success = true;
 
+        // -------- Phase 1: install --------
+        // Map slug => entry tracking install + activation outcome.
+        $tracker = array();
+
         foreach ( $plugins as $plugin ) {
-            // Each $plugin entry comes from plugin-download-config.php and
-            // contains 'name' (slug), 'zip_file' and 'version'.
             $slug      = isset( $plugin['name'] )     ? $plugin['name']     : '';
             $zip_file  = isset( $plugin['zip_file'] ) ? $plugin['zip_file'] : '';
             $version   = isset( $plugin['version'] )  ? $plugin['version']  : 'latest';
 
             if ( empty( $slug ) || empty( $zip_file ) ) {
                 $overall_success = false;
-                $results[] = array(
-                    'name'    => $slug ?: __( '(unknown)', 'wp-plugin-bundle' ),
-                    'success' => false,
-                    'message' => __( 'Plugin configuration is missing slug or zip filename.', 'wp-plugin-bundle' ),
+                $tracker[ $slug ?: '(unknown)' ] = array(
+                    'name'           => $slug ?: __( '(unknown)', 'wp-plugin-bundle' ),
+                    'install_ok'     => false,
+                    'install_msg'    => __( 'Plugin configuration is missing slug or zip filename.', 'wp-plugin-bundle' ),
+                    'activation_ok'  => false,
+                    'activation_msg' => '',
                 );
                 continue;
             }
 
             $result = $installer->install_from_github( $slug, $zip_file, $version );
 
-            if ( $result['success'] ) {
-                // Activate the plugin once installed.
-                $activation_slug = ! empty( $result['plugin_slug'] ) ? $result['plugin_slug'] : $slug;
-                $activation = $installer->activate_plugin( $activation_slug );
-                $result['activation'] = $activation;
+            $tracker[ $slug ] = array(
+                'name'           => $slug,
+                'install_ok'     => ! empty( $result['success'] ),
+                'install_msg'    => isset( $result['message'] ) ? $result['message'] : '',
+                'plugin_slug'    => ! empty( $result['plugin_slug'] ) ? $result['plugin_slug'] : $slug,
+                'activation_ok'  => false,
+                'activation_msg' => '',
+            );
 
-                if ( $activation['success'] ) {
-                    $success_count++;
-                } else {
-                    $overall_success = false;
+            if ( empty( $result['success'] ) ) {
+                $overall_success = false;
+            }
+        }
+
+        // -------- Phase 2: activate in passes --------
+        // Loop until a full pass produces no new activations.
+        $max_passes = 5;
+        for ( $pass = 0; $pass < $max_passes; $pass++ ) {
+            $progressed = false;
+
+            foreach ( $tracker as $slug => &$entry ) {
+                if ( ! $entry['install_ok'] || $entry['activation_ok'] ) {
+                    continue;
                 }
+
+                $activation_slug = ! empty( $entry['plugin_slug'] ) ? $entry['plugin_slug'] : $slug;
+                $activation = $installer->activate_plugin( $activation_slug );
+
+                if ( ! empty( $activation['success'] ) ) {
+                    $entry['activation_ok']  = true;
+                    $entry['activation_msg'] = isset( $activation['message'] ) ? $activation['message'] : '';
+                    $progressed = true;
+                } else {
+                    // Keep the latest message; will be overwritten on next pass if it later succeeds.
+                    $entry['activation_msg'] = isset( $activation['message'] ) ? $activation['message'] : '';
+                }
+            }
+            unset( $entry );
+
+            if ( ! $progressed ) {
+                break;
+            }
+        }
+
+        // -------- Build final results + counts --------
+        $success_count = 0;
+        foreach ( $tracker as $entry ) {
+            $ok = $entry['install_ok'] && $entry['activation_ok'];
+            if ( $ok ) {
+                $success_count++;
             } else {
                 $overall_success = false;
             }
 
+            // Surface the most actionable message.
+            if ( ! $entry['install_ok'] ) {
+                $message = $entry['install_msg'];
+            } elseif ( ! $entry['activation_ok'] ) {
+                $message = $entry['activation_msg']
+                    ? sprintf( __( 'Installed but not activated: %s', 'wp-plugin-bundle' ), $entry['activation_msg'] )
+                    : __( 'Installed but could not be activated automatically.', 'wp-plugin-bundle' );
+            } else {
+                $message = $entry['install_msg'];
+            }
+
             $results[] = array(
-                'name'    => $slug,
-                'success' => $result['success'],
-                'message' => $result['message'],
+                'name'    => $entry['name'],
+                'success' => $ok,
+                'message' => $message,
             );
         }
 

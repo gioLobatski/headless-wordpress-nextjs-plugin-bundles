@@ -1,102 +1,45 @@
 # Headless WordPress NEXT.js Plugin Bundles
 
-A comprehensive WordPress plugin bundle manager for headless WordPress with NEXT.js, that allows you to package, install, and activate multiple plugins as a single unit.
+A comprehensive WordPress plugin bundle manager for headless WordPress with NEXT.js, featuring **on-demand plugin downloads** from GitHub Releases.
+
+**Version:** 1.2.0
 
 ## Features
 
 - ✅ **Installation Wizard** - Choose your site type before installation
+- ✅ **GitHub Auto-Downloads** - Plugins downloaded automatically from GitHub Releases
 - ✅ **Smart Plugin Selection** - Install only the plugins you need
 - ✅ **Two Installation Modes** - Basic/Portfolio or Shop/Catalogue
-- ✅ **Automatic Activation** - Plugins are automatically activated after selection
+- ✅ **Automatic Activation** - Plugins are automatically activated after installation
 - ✅ **Admin Dashboard** - Beautiful admin interface to manage bundled plugins
 - ✅ **Status Monitoring** - Track which plugins are active/inactive
 - ✅ **One-Click Reinstall** - Easily reinstall all bundled plugins
-- ✅ **Extensible** - Easy to add or remove plugins from the bundle
+- ✅ **Lightweight Plugin** - Main plugin is only ~2MB (plugins downloaded on-demand)
 
-## Directory Structure
+## How It Works
 
-```
-wp-plugin-bundle/
-├── wp-plugin-bundle.php          # Main plugin file
-├── includes/
-│   ├── class-plugin-installer.php    # Handles plugin installation
-│   └── class-plugin-manager.php      # Manages bundled plugins
-├── admin/
-│   └── class-admin.php               # Admin interface
-├── assets/
-│   ├── css/
-│   │   └── admin.css                 # Admin styles
-│   └── js/
-│       └── admin.js                  # Admin JavaScript
-├── bundled-plugins/                  # 📦 Place your plugins here
-└── README.md
-```
+Instead of bundling all plugins in the ZIP (which would make it 60MB+), this plugin:
+
+1. Downloads the repository source archive from GitHub Releases
+2. Extracts plugins from the `bundled-plugins/` directory
+3. Installs and activates only the plugins you need
+
+**Download URL:** `https://github.com/gioLobatski/headless-wordpress-nextjs-plugin-bundles/archive/refs/tags/{version}.zip`
 
 ## Installation
 
-1. **Download** the entire `wp-plugin-bundle` folder
+1. **Download** the plugin from [GitHub Releases](https://github.com/gioLobatski/headless-wordpress-nextjs-plugin-bundles/releases)
 2. **Upload** to your WordPress `wp-content/plugins/` directory
-3. **Add your plugins** to the `bundled-plugins/` folder (see below)
-4. **Activate** the "WordPress Plugin Bundle" plugin from WordPress admin
-5. **Complete the Setup Wizard** - Choose your site type:
+3. **Activate** the "Headless WordPress NEXT.js Plugin Bundles" plugin
+4. **Complete the Setup Wizard** - Choose your site type:
    - **Basic/Portfolio Site**: Installs 15 plugins (excludes WooCommerce)
-   - **Shop/Catalogue Site**: Installs all 17 plugins (including WooCommerce)
+   - **Shop/Catalogue Site**: Installs 17 plugins (including WooCommerce)
 
-## How to Add Plugins to the Bundle
+The wizard will automatically download all plugins from GitHub! 🚀
 
-### Method 1: Single File Plugins
+## Included Plugins
 
-If your plugin is a single PHP file (e.g., `my-plugin.php`):
-
-1. Copy the plugin file to `bundled-plugins/` directory
-2. That's it! The plugin will be automatically detected
-
-```
-bundled-plugins/
-└── my-plugin.php
-```
-
-### Method 2: Multi-File Plugins (Directories)
-
-If your plugin consists of multiple files in a directory:
-
-1. Copy the entire plugin directory to `bundled-plugins/`
-2. Ensure the main plugin file has the proper WordPress plugin header
-3. The bundle will detect and install it automatically
-
-```
-bundled-plugins/
-├── woocommerce/
-│   ├── woocommerce.php
-│   ├── includes/
-│   └── assets/
-└── yoast-seo/
-    ├── wp-seo.php
-    └── ...
-```
-
-### Method 3: Download from WordPress Repository
-
-You can also download plugins from WordPress.org and add them:
-
-```bash
-# Example: Download and add WooCommerce
-cd /path/to/wp-plugin-bundle/bundled-plugins
-wget https://downloads.wordpress.org/plugin/woocommerce.latest-stable.zip
-unzip woocommerce.latest.stable.zip
-rm woocommerce.latest.stable.zip
-```
-
-## Usage
-
-### Installation Wizard (First Time Setup)
-
-When you activate the plugin bundle for the first time, you'll be redirected to the **Setup Wizard**:
-
-#### Option 1: Basic or Portfolio Site
-**Perfect for:** Blogs, business sites, portfolios, brochures
-
-**Installs 15 plugins:**
+### Basic/Portfolio Site (15 plugins):
 - Advanced Custom Fields Pro
 - Classic Editor
 - Duplicate Page
@@ -109,191 +52,88 @@ When you activate the plugin bundle for the first time, you'll be redirected to 
 - WP GraphQL
 - WP GraphQL ACF
 - WP GraphQL IDE
-- WP GraphQL Rank Math
 - WP GraphQL Smart Cache
 - WP GraphQL Tax Query
 
-**Excludes:** WooCommerce, WPGraphQL WooCommerce
+### Shop/Catalogue Site (17 plugins):
+- All Basic Site plugins (15)
+- **WooCommerce** - E-commerce platform
+- **Gravity Forms** - Form builder
 
-#### Option 2: Shop or Catalogue Site
-**Perfect for:** E-commerce stores, product catalogues
+## Directory Structure
 
-**Installs all 17 plugins:**
-- All 15 plugins from Basic/Portfolio
-- WooCommerce
-- WPGraphQL WooCommerce
-
-### After Wizard Completion
-
-Once you complete the wizard:
-- Navigate to **Plugin Bundle** in your WordPress admin menu to see the dashboard
-- Monitor plugin status
-- Reinstall plugins if needed
-
-### Admin Dashboard
-
-The admin dashboard provides:
-
-- **Statistics**: View total, active, and inactive plugin counts
-- **Plugin List**: See all bundled plugins with their status
-- **Reinstall All**: One-click button to reinstall all bundled plugins
-- **Refresh Status**: Update the plugin status display
-- **Quick Actions**: Activate individual plugins directly from the dashboard
-
-### Managing Plugins
-
-#### Adding New Plugins
-
-1. Place the plugin file or directory in `bundled-plugins/`
-2. Go to **Plugin Bundle** admin page
-3. Click **Reinstall All Plugins** to install the new additions
-
-#### Removing Plugins
-
-1. Simply delete or move the plugin out of the `bundled-plugins/` directory
-2. You may want to manually deactivate and delete it from WordPress Plugins page
-
-#### Updating Plugins
-
-1. Replace the old plugin files in `bundled-plugins/` with the new version
-2. Click **Reinstall All Plugins** from the admin dashboard
-
-## Technical Details
-
-### How It Works
-
-1. **Detection**: The plugin scans the `bundled-plugins/` directory on activation
-2. **Installation**: Plugins are copied to WordPress's `wp-content/plugins/` directory
-3. **Activation**: Each plugin is programmatically activated
-4. **Management**: Admin interface provides ongoing management capabilities
-
-### WordPress Functions Used
-
-- `activate_plugin()` - Activates plugins programmatically
-- `get_plugin_data()` - Reads plugin headers
-- `is_plugin_active()` - Checks plugin activation status
-- `WP_Filesystem` - Safely copies files in WordPress environment
-
-### Hooks and Filters
-
-The plugin uses standard WordPress hooks:
-
-- `register_activation_hook` - Triggered on bundle activation
-- `register_deactivation_hook` - Triggered on bundle deactivation
-- `plugins_loaded` - Initializes the plugin
-- `admin_init` - Checks bundled plugins status
-- `admin_menu` - Adds admin menu item
-- `admin_enqueue_scripts` - Loads admin assets
-
-## Customization
-
-### Changing the Menu Position
-
-Edit `admin/class-admin.php` and modify the `add_menu_page()` priority:
-
-```php
-add_menu_page(
-    ...,
-    'dashicons-admin-plugins',
-    100  // Change this number to adjust position
-);
+```
+wp-plugin-bundle/
+├── wp-plugin-bundle.php              # Main plugin file
+├── includes/
+│   ├── class-plugin-installer.php    # Handles plugin installation
+│   ├── class-plugin-manager.php      # Manages bundled plugins
+│   └── plugin-download-config.php    # GitHub download configuration
+├── admin/
+│   ├── class-admin.php               # Admin interface
+│   └── class-installation-wizard.php # Setup wizard
+├── assets/
+│   ├── css/
+│   │   ├── admin.css                 # Admin styles
+│   │   └── wizard.css                # Wizard styles
+│   └── js/
+│       ├── admin.js                  # Admin JavaScript
+│       └── wizard.js                 # Wizard JavaScript
+├── bundled-plugins/                  #  Plugin source files (in repository)
+└── README.md
 ```
 
-### Auto-Activate on Bundle Activation
+## Changelog
 
-This is already enabled by default. To disable, edit `wp-plugin-bundle.php`:
+### Version 1.2.0 (Current)
+-  **GitHub Source Archive Downloads** - No more manual ZIP creation
+- 📦 **Lightweight Plugin** - Main plugin reduced from 60MB to ~2MB
+- 🔄 **On-Demand Installation** - Plugins downloaded during setup wizard
+- 🎯 **Improved Error Logging** - Detailed debug output for troubleshooting
+- 🔄 **Reset Wizard Feature** - Easily rerun the setup wizard
+- 📝 **Updated Admin UI** - Clear instructions for GitHub workflow
 
-```php
-public function activate() {
-    // Comment out this line to disable auto-installation
-    // $this->install_bundled_plugins();
-}
-```
+### Version 1.1.0
+-  **Setup Wizard UI Improvements** - Better visual design and progress indicators
+- 🔄 **Plugin Installation Progress** - Real-time status updates during installation
+- 🛠️ **Admin Dashboard Enhancements** - Better plugin management interface
+- 📋 **Site Type Selection** - Choose between Basic/Portfolio or Shop/Catalogue
+- 🔧 **Bug Fixes** - Various stability improvements
 
-## Troubleshooting
+### Version 1.0.0
+- ✨ **Initial Release**
+- 🎯 **Installation Wizard** - Guided setup process
+-  **Plugin Bundling** - Package multiple plugins together
+- 🔄 **Automatic Activation** - One-click plugin activation
+- 📊 **Admin Dashboard** - Manage bundled plugins
 
-### Plugins Not Installing
+## Development
 
-**Problem**: Bundled plugins are not being installed on activation.
+### Adding New Plugins
 
-**Solution**:
-1. Check file permissions on `wp-content/plugins/` directory
-2. Ensure plugins in `bundled-plugins/` have valid plugin headers
-3. Check WordPress debug log for errors
+1. Add plugin folder to `bundled-plugins/` directory
+2. Update `includes/plugin-download-config.php` with plugin details
+3. Commit changes and create new GitHub tag
+4. Update version in `wp-plugin-bundle.php`
 
-### Plugin Headers Required
+### Configuration
 
-Each plugin must have this header in its main PHP file:
+Edit `includes/plugin-download-config.php` to customize:
+- Plugin slugs and names
+- Download URLs
+- Version tags
 
-```php
-<?php
-/**
- * Plugin Name: My Plugin
- * Version: 1.0.0
- */
-```
+## Support
 
-### Permissions Issues
-
-Ensure WordPress has write access to the plugins directory:
-
-```bash
-chmod 755 wp-content/plugins/
-```
-
-## Best Practices
-
-1. **Test First**: Test the bundle on a staging site before production
-2. **Backup**: Always backup before installing multiple plugins
-3. **Version Control**: Keep track of plugin versions in the bundle
-4. **Documentation**: Maintain a list of included plugins and their versions
-5. **Updates**: Regularly update bundled plugins for security
-
-## Included Plugins
-
-*Add your list of bundled plugins here:*
-
-| Plugin Name | Version | Description |
-|------------|---------|-------------|
-| [Plugin 1] | 1.0.0   | Description |
-| [Plugin 2] | 2.0.0   | Description |
+- **GitHub Repository:** https://github.com/gioLobatski/headless-wordpress-nextjs-plugin-bundles
+- **Issues:** https://github.com/gioLobatski/headless-wordpress-nextjs-plugin-bundles/issues
+- **Author:** High6-Gio
+- **Website:** https://high6.com/
 
 ## License
 
 GPL v2 or later
 
-## Support
+---
 
-For support, please contact: your-email@yourwebsite.com
-
-## Changelog
-
-### 1.1.0
-- **Plugin Bundle Updates:**
-  - Replaced IWP Admin Panel Installer with InfiniteWP Client
-  - Updated bundled plugins list to reflect current package
-- **Admin Dashboard Improvements:**
-  - Removed redundant activate buttons from plugin list
-  - Simplified actions to "View in Plugins" button only
-  - Updated instructions to direct users to WordPress Plugins page for activation
-- **Setup Wizard Enhancements:**
-  - Changed post-installation redirect to WordPress Plugins page
-  - Users can now activate and configure plugins at their own pace
-  - Updated wizard completion message and button text
-  - Updated plugin list in wizard to show InfiniteWP Client instead of IWP Admin Panel Installer
-- **User Experience:**
-  - Streamlined workflow - installation and activation are now separate steps
-  - Better alignment with standard WordPress plugin management practices
-
-### 1.0.1
-- Fixed plugin installation wizard redirect behavior
-- Improved admin dashboard functionality
-- Updated bundled plugins detection and path resolution
-
-### 1.0.0
-- Initial release
-- Plugin bundle management system
-- Admin dashboard with statistics and plugin management
-- Setup wizard with Basic/Portfolio and Shop/Catalogue modes
-- Automatic installation and activation
-- Support for single-file and directory-based plugins
+**Built for headless WordPress with NEXT.js** 

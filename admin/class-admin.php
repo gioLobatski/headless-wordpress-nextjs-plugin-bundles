@@ -30,6 +30,37 @@ class WP_Bundle_Admin {
         add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
         add_action( 'wp_ajax_wp_bundle_reinstall_plugins', array( $this, 'ajax_reinstall_plugins' ) );
+        add_action( 'admin_init', array( $this, 'handle_reset_wizard' ) );
+    }
+    
+    /**
+     * Handle setup wizard reset
+     */
+    public function handle_reset_wizard() {
+        if ( isset( $_GET['wp_bundle_reset_wizard'] ) && $_GET['wp_bundle_reset_wizard'] === '1' ) {
+            // Verify nonce
+            if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'wp_bundle_reset_wizard' ) ) {
+                wp_die( __( 'Security check failed.', 'wp-plugin-bundle' ) );
+            }
+            
+            // Check permissions
+            if ( ! current_user_can( 'manage_options' ) ) {
+                wp_die( __( 'Insufficient permissions.', 'wp-plugin-bundle' ) );
+            }
+            
+            // Reset wizard flags
+            delete_option( 'wp_bundle_wizard_completed' );
+            delete_option( 'wp_bundle_site_type' );
+            delete_option( 'wp_bundle_installed_plugins_list' );
+            delete_option( 'wp_bundle_just_activated' );
+            
+            // Set flag to show wizard
+            add_option( 'wp_bundle_just_activated', true );
+            
+            // Redirect to wizard
+            wp_redirect( admin_url( 'admin.php?page=wp-bundle-wizard' ) );
+            exit;
+        }
     }
     
     /**
@@ -141,6 +172,9 @@ class WP_Bundle_Admin {
                     <button type="button" id="wp-bundle-refresh-status" class="button">
                         <?php echo esc_html__( 'Refresh Status', 'wp-plugin-bundle' ); ?>
                     </button>
+                    <a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=wp-plugin-bundle&wp_bundle_reset_wizard=1' ), 'wp_bundle_reset_wizard' ) ); ?>" class="button button-link-delete" onclick="return confirm('Are you sure you want to reset the setup wizard? This will allow you to run it again.');">
+                        <?php echo esc_html__( 'Reset Setup Wizard', 'wp-plugin-bundle' ); ?>
+                    </a>
                 </div>
                 
                 <!-- Plugins List -->

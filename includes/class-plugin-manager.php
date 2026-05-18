@@ -24,36 +24,28 @@ class WP_Bundle_Plugin_Manager {
     
     /**
      * Get list of bundled plugins
-     * This is where you'll define which plugins to include
+     * Reads from the download configuration file
      * 
      * @return array
      */
     public function get_bundled_plugins() {
         $bundled_plugins = array();
         
-        // Scan the bundled-plugins directory
-        if ( is_dir( WP_BUNDLE_BUNDLED_PLUGINS_DIR ) ) {
-            $plugins = scandir( WP_BUNDLE_BUNDLED_PLUGINS_DIR );
+        // Load plugin download configuration
+        $config_file = WP_BUNDLE_PLUGIN_DIR . 'includes/plugin-download-config.php';
+        
+        if ( file_exists( $config_file ) ) {
+            $plugin_config = include $config_file;
             
-            foreach ( $plugins as $plugin ) {
-                if ( $plugin === '.' || $plugin === '..' ) {
-                    continue;
-                }
-                
-                $plugin_path = WP_BUNDLE_BUNDLED_PLUGINS_DIR . $plugin;
-                
-                // Check if it's a plugin directory or file
-                if ( is_dir( $plugin_path ) || ( is_file( $plugin_path ) && pathinfo( $plugin_path, PATHINFO_EXTENSION ) === 'php' ) ) {
-                    // Handle nested directory structure
-                    $actual_plugin_path = $this->resolve_plugin_path( $plugin_path );
-                    
-                    $bundled_plugins[] = array(
-                        'path' => $actual_plugin_path,
-                        'name' => $plugin,
-                        'type' => is_dir( $actual_plugin_path ) ? 'directory' : 'file',
-                        'original_path' => $plugin_path
-                    );
-                }
+            foreach ( $plugin_config as $slug => $config ) {
+                $bundled_plugins[] = array(
+                    'path' => '', // Not used for remote downloads
+                    'name' => $slug,
+                    'type' => 'remote',
+                    'zip_file' => $config['zip_file'],
+                    'version' => $config['version'],
+                    'download_url' => '' // Will be built by installer
+                );
             }
         }
         
@@ -61,7 +53,7 @@ class WP_Bundle_Plugin_Manager {
     }
     
     /**
-     * Install all bundled plugins
+     * Install all bundled plugins from GitHub Releases
      * 
      * @return array
      */
@@ -70,7 +62,12 @@ class WP_Bundle_Plugin_Manager {
         $results = array();
         
         foreach ( $bundled_plugins as $plugin ) {
-            $result = $this->installer->install_from_local( $plugin['path'] );
+            // Use GitHub download method
+            $result = $this->installer->install_from_github( 
+                $plugin['name'], 
+                $plugin['zip_file'], 
+                $plugin['version'] 
+            );
             
             if ( $result['success'] ) {
                 // Activate the plugin

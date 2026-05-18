@@ -183,7 +183,8 @@ class WP_Bundle_Admin {
                     
                     <?php if ( empty( $plugins ) ) : ?>
                         <div class="wp-bundle-notice notice notice-info">
-                            <p><?php echo esc_html__( 'No plugins are currently bundled. Add plugins to the bundled-plugins/ directory.', 'wp-plugin-bundle' ); ?></p>
+                            <p><?php echo esc_html__( 'Plugins will be downloaded from GitHub Releases during the Setup Wizard. Complete the wizard to install your plugins automatically.', 'wp-plugin-bundle' ); ?></p>
+                            <p><a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-bundle-wizard' ) ); ?>" class="button"><?php echo esc_html__( 'Run Setup Wizard', 'wp-plugin-bundle' ); ?></a></p>
                         </div>
                     <?php else : ?>
                         <table class="wp-list-table widefat fixed striped">
@@ -224,17 +225,23 @@ class WP_Bundle_Admin {
                 
                 <!-- Instructions -->
                 <div class="wp-bundle-instructions">
-                    <h2><?php echo esc_html__( 'How to Add Plugins', 'wp-plugin-bundle' ); ?></h2>
+                    <h2><?php echo esc_html__( 'How It Works', 'wp-plugin-bundle' ); ?></h2>
                     <ol>
-                        <li><?php echo esc_html__( 'Download or copy your plugin files', 'wp-plugin-bundle' ); ?></li>
-                        <li><?php echo esc_html__( 'Place them in the bundled-plugins/ directory', 'wp-plugin-bundle' ); ?></li>
-                        <li><?php echo esc_html__( 'Plugins can be single .php files or plugin directories', 'wp-plugin-bundle' ); ?></li>
-                        <li><?php echo esc_html__( 'Activate and manage plugins from the WordPress Plugins page', 'wp-plugin-bundle' ); ?></li>
+                        <li><?php echo esc_html__( 'Run the Setup Wizard and choose your site type (Basic or Shop)', 'wp-plugin-bundle' ); ?></li>
+                        <li><?php echo esc_html__( 'Plugins are automatically downloaded from GitHub Releases', 'wp-plugin-bundle' ); ?></li>
+                        <li><?php echo esc_html__( 'Go to the WordPress Plugins page to activate and configure them', 'wp-plugin-bundle' ); ?></li>
                     </ol>
                     
-                    <div class="wp-bundle-path">
-                        <strong><?php echo esc_html__( 'Bundled Plugins Directory:', 'wp-plugin-bundle' ); ?></strong>
-                        <code><?php echo esc_html( WP_BUNDLE_BUNDLED_PLUGINS_DIR ); ?></code>
+                    <div class="wp-bundle-info-box">
+                        <strong><?php echo esc_html__( 'GitHub Repository:', 'wp-plugin-bundle' ); ?></strong>
+                        <a href="https://github.com/gioLobatski/headless-wordpress-nextjs-plugin-bundles/releases" target="_blank">
+                            <?php echo esc_html__( 'View Plugin Releases', 'wp-plugin-bundle' ); ?>
+                        </a>
+                    </div>
+                    
+                    <div class="wp-bundle-info-box" style="margin-top: 15px;">
+                        <strong><?php echo esc_html__( 'Need to add a new plugin?', 'wp-plugin-bundle' ); ?></strong>
+                        <p style="margin: 5px 0 0 0;"><?php echo esc_html__( 'Contact the plugin administrator to add it to the GitHub Releases. The plugin will then be available in the next wizard run.', 'wp-plugin-bundle' ); ?></p>
                     </div>
                 </div>
             </div>
